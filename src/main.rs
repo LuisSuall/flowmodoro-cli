@@ -57,14 +57,13 @@ fn start_flow(lockfile: Lockfile) {
 
 fn end_flow(lockfile: Lockfile) {
     if lockfile.exists() {
-        println!("Ending flowmodoro");
         let lockduration = lockfile.lock_duration();
         match lockduration {
             Ok(i) => println!("The flowmodoro lasted {} mins.\nYour rest should be {} mins.", i.as_secs()/60, i.as_secs()/(60*WORK_TO_REST_RATIO)),
             Err(e) => println!("Can not check flowmodoro duration => {}", e)
         }
         match lockfile.clear() {
-            Ok(_) => println!("Lock cleared!"),
+            Ok(_) => (),
             Err(e) => println!("Unable to clear lock: {}", e)
         }
     } else {
@@ -78,7 +77,6 @@ fn main() {
     let lockfile = Lockfile {
         file: PathBuf::from(LOCK_PATH),
     };
-    println!("Welcome to Flowmodoro");
 
     if cli.start {
         start_flow(lockfile);
