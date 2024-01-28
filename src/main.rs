@@ -22,8 +22,7 @@ fn get_lock_path() -> String{
         Err(_) =>  "/tmp".to_string(),
     };
 
-    print!("{}",base_path);
-    return base_path + "/flowmodoro/flowmodoro.lock"
+    base_path + "/flowmodoro/flowmodoro.lock"
 }
 
 struct Lockfile {
@@ -36,6 +35,7 @@ impl Lockfile {
     }
 
     pub fn create(&self) -> std::io::Result<()> {
+        if let Some(path) = self.file.parent() {fs::create_dir_all(path)?}
         File::create(self.file.as_os_str())?;
         Ok(())
     }
