@@ -1,7 +1,6 @@
-use std::{path::PathBuf, time::Duration, fs::{File, self}};
+use std::{path::PathBuf, time::Duration, fs::{File, self}, env::var};
 use clap::Parser;
 
-const LOCK_PATH:&str = "/tmp/flowmodoro.lock";
 const WORK_TO_REST_RATIO: u64 = 4;
 
 #[derive(Parser)]
@@ -13,6 +12,18 @@ struct Cli {
     end: bool,
     #[arg(long)]
     info: bool,
+}
+
+fn get_lock_path() -> String{
+    let config_home = var("XDG_CONFIG_HOME")
+        .or_else(|_| var("HOME").map(|home|format!("{}/.config", home)));
+    let base_path = match config_home {
+        Ok(path) => path,
+        Err(_) =>  "/tmp".to_string(),
+    };
+
+    print!("{}",base_path);
+    return base_path + "/flowmodoro/flowmodoro.lock"
 }
 
 struct Lockfile {
@@ -83,7 +94,7 @@ fn main() {
     let cli = Cli::parse();
 
     let lockfile = Lockfile {
-        file: PathBuf::from(LOCK_PATH),
+        file: PathBuf::from(get_lock_path()),
     };
 
     if cli.info {
