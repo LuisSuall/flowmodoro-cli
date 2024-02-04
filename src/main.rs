@@ -1,15 +1,13 @@
 use std::{path::PathBuf, time::Duration, fs::{File, self}, env::var};
 use clap::Parser;
+use chrono::Local;
 
 const WORK_TO_REST_RATIO: u64 = 4;
 
 #[derive(Parser)]
 #[group(required = false, multiple = false)]
 struct Cli {
-    #[arg(short, long)]
-    start: bool,
-    #[arg(short, long)]
-    end: bool,
+    message: Option<String>,
     #[arg(long)]
     info: bool,
 }
@@ -97,15 +95,15 @@ fn main() {
         file: PathBuf::from(get_lock_path()),
     };
 
+    let date = Local::now();
+    
     if cli.info {
         info_flow(&lockfile);
-    } else if cli.start {
-        start_flow(lockfile);
-    } else if cli.end {
-        end_flow(lockfile);
     } else if lockfile.exists() {
+        println!("{0},end,\"{1}\"", date.format("%Y/%m/%d-%H:%M:%S"), cli.message.unwrap_or("".to_string()));
         end_flow(lockfile)
     } else {
+        println!("{0},start,\"{1}\"", date.format("%Y/%m/%d-%H:%M:%S"), cli.message.unwrap_or("".to_string()));
         start_flow(lockfile)
     }
 }

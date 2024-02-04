@@ -9,4 +9,5 @@ name = "flowmodoro"
 path = "src/main.rs"
 
 [dependencies]
+chrono = "0.4.33"
 clap = { version = "4.0", features = ["derive"] }
