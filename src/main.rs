@@ -1,20 +1,18 @@
-use std::{path::PathBuf, time::Duration, fs::{File, self}, env::var};
+use std::{path::PathBuf, time::Duration, fs::{File, self, OpenOptions},io::Write, env::var};
 use clap::Parser;
+use chrono::{Local, DateTime};
 
 const WORK_TO_REST_RATIO: u64 = 4;
 
 #[derive(Parser)]
 #[group(required = false, multiple = false)]
 struct Cli {
-    #[arg(short, long)]
-    start: bool,
-    #[arg(short, long)]
-    end: bool,
+    message: Option<String>,
     #[arg(long)]
     info: bool,
 }
 
-fn get_lock_path() -> String{
+fn get_files_route() -> String{
     let config_home = var("XDG_CONFIG_HOME")
         .or_else(|_| var("HOME").map(|home|format!("{}/.config", home)));
     let base_path = match config_home {
@@ -22,7 +20,7 @@ fn get_lock_path() -> String{
         Err(_) =>  "/tmp".to_string(),
     };
 
-    base_path + "/flowmodoro/flowmodoro.lock"
+    base_path + "/flowmodoro/"
 }
 
 struct Lockfile {
@@ -90,22 +88,50 @@ fn end_flow(lockfile: Lockfile) {
     }
 }
 
+fn write_log_str(message: &str) {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open(get_files_route()+"flowmodoro.log")
+        .unwrap();
+
+    if let Err(e) = writeln!(file, "{message}") {
+        eprintln!("Couldn't write to file: {}", e);
+    }
+}
+fn write_log(date:DateTime<Local>, status:&str, message: &str) {
+    let formated_date = date.format("%Y/%m/%d-%H:%M:%S");
+    write_log_str(&format!("{formated_date}, {status}, \"{message}\""));
+}
+
+fn create_log() {
+    let logfile = Lockfile {
+        file: PathBuf::from(get_files_route()+"flowmodoro.log"),
+    };
+    if !logfile.exists() {
+        let _ = logfile.create();
+        write_log_str("date,status,message");
+    }
+}
+
 fn main() {
     let cli = Cli::parse();
 
     let lockfile = Lockfile {
-        file: PathBuf::from(get_lock_path()),
+        file: PathBuf::from(get_files_route()+"flowmodoro.lock"),
     };
-
+    
+    create_log();
+    let date = Local::now();
+    let message = cli.message.unwrap_or("".to_string());
+    
     if cli.info {
         info_flow(&lockfile);
-    } else if cli.start {
-        start_flow(lockfile);
-    } else if cli.end {
-        end_flow(lockfile);
     } else if lockfile.exists() {
-        end_flow(lockfile)
+        end_flow(lockfile);
+        write_log(date, "END", &message);
     } else {
-        start_flow(lockfile)
+        start_flow(lockfile);
+        write_log(date, "START", &message);
     }
 }
